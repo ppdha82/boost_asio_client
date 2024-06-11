@@ -2,7 +2,7 @@ project (asio_client)
 
 cmake_minimum_required(VERSION 3.15)
 
-set (asio_SOURCES src/main.cpp)
+set (asio_SOURCES src/main.cpp src/client.cpp)
 
 set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -std=c++11")
 

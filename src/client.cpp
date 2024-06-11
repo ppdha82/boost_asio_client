@@ -11,38 +11,41 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <thread>
+#include <chrono>
+
 #include <boost/asio.hpp>
+
+#include "client.h"
 
 using boost::asio::ip::tcp;
 
 enum { max_length = 1024 };
 
+std::shared_ptr<client_with_asio> clientInstance;
+
 void connect(char* argv[])
 {
     try {
+        enum { TEST_COUNT = 10, };
+        int count = 0;
+        std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " argv[1] [" << argv[1] << "] argv[2] [" << argv[2] << "]\n";
+        std::string ipAddress(argv[1]);
+        std::string cPort(argv[2]);
+        int port = stoi(cPort, nullptr, 10);
         boost::asio::io_service io_service;
+        std::string tmpMessage("test start");
 
-        tcp::socket s(io_service);
-        tcp::resolver resolver(io_service);
-        boost::asio::connect(s, resolver.resolve({argv[1], argv[2]}));
+        clientInstance = std::make_shared<client_with_asio>(io_service, ipAddress, port);
+        clientInstance->connect();
+        clientInstance->sendMessage(tmpMessage, 0);
 
-        while(1) {
-            std::cout << "Enter message(quit = 'q' or 'Q'): ";
-            char request[max_length];
-            std::cin.getline(request, max_length);
-            std::string input(request);
-            if (input.compare("q") == 0 || input.compare("Q") == 0) {
-                std::cout << "you pressed q or Q" << std::endl;
-                break;
-            }
-            size_t request_length = std::strlen(request);
-            boost::asio::write(s, boost::asio::buffer(request, request_length));
-
-            char reply[max_length];
-            size_t reply_length = boost::asio::read(s, boost::asio::buffer(reply, request_length));
-            std::cout << "Reply is: ";
-            std::cout.write(reply, reply_length);
-            std::cout << "\n";
+        tmpMessage.clear();
+        while (count < TEST_COUNT) {
+            clientInstance->sendMessage(tmpMessage, count);
+            count++;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Wait [" << count << "]\n";
         }
     }
     catch (std::exception& e) {

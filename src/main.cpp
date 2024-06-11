@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-            connect(argv);
+        connect(argv);
     }
     catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";
