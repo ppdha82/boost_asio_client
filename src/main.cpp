@@ -27,7 +27,9 @@ int main(int argc, char* argv[])
             return 1;
         }
 
-        connect(argv);
+        init_program(argv);
+        connect();
+        do_program();
     }
     catch (std::exception& e) {
         std::cerr << "Exception: " << e.what() << "\n";

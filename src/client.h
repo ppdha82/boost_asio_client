@@ -3,6 +3,8 @@
 
 #include "client_with_asio.hpp"
 
-void connect(char* argv[]);
+void init_program(char* argv[]);
+void connect();
+void do_program();
 
 #endif  /* __CLIENT_H__ */

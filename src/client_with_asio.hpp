@@ -43,7 +43,8 @@ public:
 
     bool isConnected()
     {
-        if (m_socket.use_count() == 0 || m_resolver.use_count() == 0) {
+        if (m_io_service.use_count() == 0 || m_socket.use_count() == 0 || m_resolver.use_count() == 0) {
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_io_service.use_count()[" << m_io_service.use_count() << "]\n";
             std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_socket.use_count()[" << m_socket.use_count() << "]\n";
             std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_resolver.use_count()[" << m_resolver.use_count() << "]\n";
             return false;
@@ -81,6 +82,55 @@ public:
         }
         catch (std::exception& e) {
             std::cerr << "[" << __FILE__ << ":" << __LINE__ << "] Exception: " << e.what() << "\n";
+            m_resolver.reset();
+            m_socket.reset();
+            // m_io_service.reset();
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_io_service.use_count()[" << m_io_service.use_count() << "]\n";
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_socket.use_count()[" << m_socket.use_count() << "]\n";
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_resolver.use_count()[" << m_resolver.use_count() << "]\n";
+        }
+    }
+
+    void sendMessage(std::string &msg)
+    {
+        try {
+            if ((m_io_service.use_count() == 0) || (m_socket.use_count() == 0) || (m_resolver.use_count() == 0)) {
+                std::string failReason;
+                if (m_io_service.use_count() == 0) {
+                    makeFailLog(failReason, "m_io_service.use_count()", m_io_service.use_count());
+                }
+                if (m_socket.use_count() == 0) {
+                    makeFailLog(failReason, "m_socket.use_count()", m_io_service.use_count());
+                }
+                if (m_resolver.use_count() == 0) {
+                    makeFailLog(failReason, "m_resolver.use_count()", m_io_service.use_count());
+                }
+                std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Failed to run " << __func__ << failReason << "\n";
+                return;
+            }
+
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Enter " << __func__ << "\n";
+            std::string requestMsg;
+            if (msg.empty()) {
+                requestMsg = "testMessage.";
+            }
+            else {
+                requestMsg = msg;
+            }
+            size_t request_length = std::strlen(requestMsg.c_str());
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " requestMsg[" << requestMsg << "]\n";
+
+            boost::asio::write(*m_socket, boost::asio::buffer(requestMsg, requestMsg.length()));
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " requestMsg[" << requestMsg << "] request_length[" << request_length << "/" << requestMsg.length() << "]\n";
+
+            char reply[max_length];
+            size_t reply_length = boost::asio::read(*m_socket, boost::asio::buffer(reply, request_length));
+            std::cout << "Reply is: ";
+            std::cout.write(reply, reply_length);
+            std::cout << "\n";
+        }
+        catch (std::exception& e) {
+            std::cerr << "[" << __FILE__ << ":" << __LINE__ << "] Exception: " << e.what() << "\n";
             m_socket.reset();
             m_resolver.reset();
             std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " reset m_socket.use_count()[" << m_socket.use_count() << "]\n";
@@ -92,15 +142,17 @@ public:
     {
         try {
             if ((m_io_service.use_count() == 0) || (m_socket.use_count() == 0) || (m_resolver.use_count() == 0)) {
+                std::string failReason;
                 if (m_io_service.use_count() == 0) {
-                    std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Failed to run " << __func__ << "m_io_service.use_count()[" << m_io_service.use_count() << "]\n";
+                    makeFailLog(failReason, "m_io_service.use_count()", m_io_service.use_count());
                 }
                 if (m_socket.use_count() == 0) {
-                    std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Failed to run " << __func__ << "m_socket.use_count()[" << m_socket.use_count() << "]\n";
+                    makeFailLog(failReason, "m_socket.use_count()", m_io_service.use_count());
                 }
                 if (m_resolver.use_count() == 0) {
-                    std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Failed to run " << __func__ << "m_resolver.use_count()[" << m_resolver.use_count() << "]\n";
+                    makeFailLog(failReason, "m_resolver.use_count()", m_io_service.use_count());
                 }
+                std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Failed to run " << __func__ << failReason << "\n";
                 return;
             }
             std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Enter " << __func__ << "\n";
@@ -141,5 +193,17 @@ private:
     std::shared_ptr<tcp::resolver> m_resolver;
     std::string ipAddress;
     int port;
+
+    void makeFailLog(std::string &msg, std::string faillog, int count)
+    {
+        enum { TMP_SIZE = 32, };
+        char tmpStr[TMP_SIZE];
+
+        msg.append(faillog);
+        msg.append("[");
+        itoa(count, tmpStr, 10);
+        msg.append(tmpStr);
+        msg.append("] ");
+    }
 };
 #endif // _BS_CLIENT_WITH_ASIO_HPP_
