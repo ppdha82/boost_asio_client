@@ -33,11 +33,14 @@ void connect(char* argv[])
         std::string ipAddress(argv[1]);
         std::string cPort(argv[2]);
         int port = stoi(cPort, nullptr, 10);
-        boost::asio::io_service io_service;
         std::string tmpMessage("test start");
 
-        clientInstance = std::make_shared<client_with_asio>(io_service, ipAddress, port);
+        clientInstance = std::make_shared<client_with_asio>(ipAddress, port);
         clientInstance->connect();
+        if (clientInstance->isConnected() == false) {
+            std::cout << "[" << __FILE__ << ":" << __LINE__ << "]" << " Not connected\n";
+            return;
+        }
         clientInstance->sendMessage(tmpMessage, 0);
 
         tmpMessage.clear();
